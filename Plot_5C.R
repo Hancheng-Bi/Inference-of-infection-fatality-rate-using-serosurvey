@@ -1,7 +1,17 @@
-
+library(sf)
+library(lemon)
+library(ggpubr)
+library(ggrepel)
+library(cowplot)
+library(ggspatial)
+library(lubridate)
+library(tidyverse)
 library(readr)
 IFR_rate <- read_csv("IFR_rate.csv")
 View(IFR_rate)
+colsF5 <- c("royalblue4","mediumpurple4","maroon","lightcoral")
+brksF5 <- c('1','2','3','4')
+legend <- c("0-40" = "royalblue4" ,"40-60"="mediumpurple4","60-80"="maroon","80+"="lightcoral")
 
 nm <- "Ratio between the IFR values of\nthe low and high SES categories"
 fig5C <- IFR_rate %>% mutate(age=as_factor(age)) %>%
