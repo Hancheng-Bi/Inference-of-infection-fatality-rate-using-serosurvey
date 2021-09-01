@@ -20,7 +20,7 @@ library(ggrepel)
 library(cowplot)
 library(ggspatial)
 library(lubridate)
-library(readr)
+
 
 ### functions:
 invlog <- function(x){exp(x)/(1+exp(x))}
@@ -34,44 +34,30 @@ View(data)
 data<- data[1:4,]
 n = length(data$Positive)
 
-### JAGS model for "M_{0}" ###
+### JAGS model###
 ############
 model<- '
 model{	
 #likelihood
 for (k in 1:K){
-# cloglog_IFR[k] ~ dnorm(theta, inv.var_tau);
-# cloglog_infectionrate[k] ~ dnorm(beta, inv.var_sig) ;
-
 cloglog_IFR[k] ~ dnorm(theta, (tau)^2);
 cloglog_infectionrate[k] ~ dnorm(beta, (sig)^2) ;
-
 cloglog(IFR[k]) <- cloglog_IFR[k];
 cloglog(infectionrate[k]) <- cloglog_infectionrate[k];
-
 confirmed_cases[k] ~ dbin(infectionrate[k],tests[k]);
 cases[k] ~ dbin(infectionrate[k], population[k]);
 deaths[k] ~ dbin(IFR[k], cases[k]);
 }
 
-#define priors, here icloglog is the inverse link function g^-1
+# Define priors
 for (k in 1:K){ phi[k]<-1;}
-
-
-# icloglog_theta ~ dunif(0, 1); 
-# icloglog_beta ~ dunif(0, 1);
-#theta <- log(-log(1-icloglog_theta));
-#beta <- log(-log(1-icloglog_beta));
 theta ~ dnorm(0, 1);
 beta ~ dnorm(0, 1);
-
-#inv.var_sig   <- (1/sd_sig)^2 ;
 sig     ~ dnorm(0, 1/1) T(0,);
-#inv.var_tau   <- (1/sd_tau)^2 ;
 tau     ~ dnorm(0, 1/1) T(0,);
 }'
 #    
-cat(model, file="JAGS_ignore.txt")
+cat(model, file="JAGS_nonpreferC.txt")
 ############
 ### END of JAGS model for "M_{0}" ###
 ############
@@ -80,11 +66,11 @@ illustrative <- function(observed_data, MCMCiter=500000){
   
   ###
   datalist <- list(K=length(observed_data$Positive), confirmed_cases=unlist(observed_data$Positive), deaths=observed_data$death, population=observed_data$Pop, tests=observed_data$Sample_size)
-  # ignore is when model assumes gamma = 0
-  jags.m_ignore <- jags.model(file = "JAGS_ignore.txt", data = datalist, n.chains = 5, n.adapt = 50000, inits= NULL)
+  
+  jags.m_ignore <- jags.model(file = "JAGS_nonpreferC.txt", data = datalist, n.chains = 5, n.adapt = 50000, inits= NULL)
   
   ######
-  params <- c("phi", "theta", "beta",  "IFR", "infectionrate", "sd_sig",   "sd_tau")		
+  params <- c("phi", "theta", "beta",  "IFR", "infectionrate", "sig",   "tau")		
   
   samps_ignore <- coda.samples(jags.m_ignore, params[-which.max(params=="gamma")], n.iter=MCMCiter,  n.burnin = MCMCiter*0.2, thin=50)
   median_ignore <- summary(samps_ignore)$quantiles[,c(3)]
@@ -92,7 +78,7 @@ illustrative <- function(observed_data, MCMCiter=500000){
   HDI<-hdi(samps_ignore)
   QQ_ignore<-t(rbind(HDI[1,],median_ignore,HDI[2,]))
   QQA<-QQ_ignore
-  goodQ<-QQA[c("theta", "beta",   "sd_tau", "sd_sig" ),]
+  goodQ<-QQA[c("theta", "beta",   "tau", "sig" ),]
   
   return(list(goodQ = goodQ, QQA=QQA, samps_ignore = samps_ignore))
 }
@@ -116,9 +102,9 @@ colnames(IFR_chain) <- c('IFR1','IFR2','IFR3','IFR4')
 
 
 ### read in data from desktop
-data <- read_csv("data_fig5C.csv")
-View(data)
-data<- data[5:8,]
+data2 <- read_csv("data_fig5C.csv")
+View(data2)
+data2<- data2[5:8,]
 n = length(data$Positive)
 
 ### JAGS model for "M_{0}" ###
@@ -127,9 +113,6 @@ model<- '
 model{	
 #likelihood
 for (k in 1:K){
-# cloglog_IFR[k] ~ dnorm(theta, inv.var_tau);
-# cloglog_infectionrate[k] ~ dnorm(beta, inv.var_sig) ;
-
 
 
 cloglog_IFR[k] ~ dnorm(theta, (tau)^2);
@@ -143,35 +126,25 @@ cases[k] ~ dbin(infectionrate[k], population[k]);
 deaths[k] ~ dbin(IFR[k], cases[k]);
 }
 
-#define priors, here icloglog is the inverse link function g^-1
 for (k in 1:K){ phi[k]<-1;}
 
-
-# icloglog_theta ~ dunif(0, 1); 
-# icloglog_beta ~ dunif(0, 1);
-
-#theta <- log(-log(1-icloglog_theta));
-#beta <- log(-log(1-icloglog_beta));
 theta ~ dnorm(0, 1);
 beta ~ dnorm(0, 1);
-
-#inv.var_sig   <- (1/sd_sig)^2 ;
 sig     ~ dnorm(0, 1/1) T(0,);
-#inv.var_tau   <- (1/sd_tau)^2 ;
 tau     ~ dnorm(0, 1/1) T(0,);
 }'
 #    
-cat(model, file="JAGS_ignore.txt")
+cat(model, file="JAGS_nonpreferC.txt")
 ############
 ### END of JAGS model for "M_{0}" ###
 ############
 
-illustrative <- function(observed_data, MCMCiter=5000){
+illustrative <- function(observed_data, MCMCiter=500000){
   
   ###
   datalist <- list(K=length(observed_data$Positive), confirmed_cases=unlist(observed_data$Positive), deaths=observed_data$death, population=observed_data$Pop, tests=observed_data$Sample_size)
   # ignore is when model assumes gamma = 0
-  jags.m_ignore <- jags.model(file = "JAGS_ignore.txt", data = datalist, n.chains = 5, n.adapt = 500, inits= NULL)
+  jags.m_ignore <- jags.model(file = "JAGS_nonpreferC.txt", data = datalist, n.chains = 5, n.adapt = 50000, inits= NULL)
   
   ######
   params <- c("phi", "theta", "beta",  "IFR", "infectionrate", "sig",   "tau")		
@@ -180,9 +153,9 @@ illustrative <- function(observed_data, MCMCiter=5000){
   median_ignore <- summary(samps_ignore)$quantiles[,c(3)]
   
   HDI<-hdi(samps_ignore)
-  QQ_ignore<-t(rbind(HDI[1,],median_ignore,HDI[2,]))
-  QQA<-QQ_ignore
-  goodQ<-QQA[c("theta", "beta",   "sd_tau", "sd_sig" ),]
+  QQA<-t(rbind(HDI[1,],median_ignore,HDI[2,]))
+  
+  goodQ<-QQA[c("theta", "beta",   "tau", "sig" ),]
   
   return(list(goodQ = goodQ, QQA=QQA, samps_ignore = samps_ignore))
 }
@@ -191,25 +164,22 @@ illustrative <- function(observed_data, MCMCiter=5000){
 ############
 
 ### Run MCMC
-## "Each model is fit using JAGS (just another Gibbs' sampler) \citep{kruschke2014doing}, with 5 independent chains, each with 500,000 draws (20\% burnin, thinning of 50)." ###  
+## "Each model is fit using JAGS (just another Gibbs' sampler) 
+## \citep{kruschke2014doing}, with 5 independent chains, each with 500,000 draws (20\% burnin, thinning of 50)." ###  
 
-MCMCiter_sim <- 5000
-results  <- illustrative(data,  MCMCiter = MCMCiter_sim)
+MCMCiter_sim <- 500000
+results  <- illustrative(data2,  MCMCiter = MCMCiter_sim)
 n_sample <- MCMCiter_sim/50
 IFR_chain1 <- rbind(results$samps_ignore[1][1:n_sample,1:n][[1]],results$samps_ignore[2][1:n_sample,1:n][[1]],
-                   results$samps_ignore[3][1:n_sample,1:n][[1]],results$samps_ignore[4][1:n_sample,1:n][[1]],
-                   results$samps_ignore[5][1:n_sample,1:n][[1]])
+                    results$samps_ignore[3][1:n_sample,1:n][[1]],results$samps_ignore[4][1:n_sample,1:n][[1]],
+                    results$samps_ignore[5][1:n_sample,1:n][[1]])
 
 colnames(IFR_chain1) <- c('IFR5','IFR6','IFR7','IFR8')
 
 IFR_chain2<-cbind(IFR_chain,IFR_chain1)
 
 
-
-
-
-
-
+## Compute ratio of posterior of high ses over low ses
 ratio1<-IFR_chain2[,1]/IFR_chain2[,5]
 ratio2 <- IFR_chain2[,2]/IFR_chain2[,6]
 ratio3<-IFR_chain2[,3]/IFR_chain2[,7]
