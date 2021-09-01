@@ -20,7 +20,7 @@ library(ggrepel)
 library(cowplot)
 library(ggspatial)
 library(lubridate)
-library(readr)
+
 
 ### functions:
 invlog <- function(x){exp(x)/(1+exp(x))}
@@ -28,7 +28,7 @@ logit <- function(x){log(x/(1-x))}
 cloglog <- function(x){log(-log(1-x))}
 icloglog <- function(x){1 - exp(-exp(x))}
 
-### read in data from desktop
+### read in data 
 data <- read_csv("data_combined.csv")
 View(data)
 n = length(data$Positive)
@@ -39,48 +39,36 @@ model<- '
 model{	
 #likelihood
 for (k in 1:K){
-# cloglog_IFR[k] ~ dnorm(theta, inv.var_tau);
-# cloglog_infectionrate[k] ~ dnorm(beta, inv.var_sig) ;
 cloglog_IFR[k] ~ dnorm(theta, (tau)^2);
 cloglog_infectionrate[k] ~ dnorm(beta, (sig)^2) ;
-
 cloglog(IFR[k]) <- cloglog_IFR[k];
 cloglog(infectionrate[k]) <- cloglog_infectionrate[k];
-
 confirmed_cases[k] ~ dbin(infectionrate[k],tests[k]);
 cases[k] ~ dbin(infectionrate[k], population[k]);
 deaths[k] ~ dbin(IFR[k], cases[k]);
 }
 
-#define priors, here icloglog is the inverse link function g^-1
+#define priors
 for (k in 1:K){ phi[k]<-1;}
-
-
-# icloglog_theta ~ dunif(0, 1); 
-# icloglog_beta ~ dunif(0, 1);
-
-#theta <- log(-log(1-icloglog_theta));
-#beta <- log(-log(1-icloglog_beta));
 theta ~ dnorm(0, 1);
 beta ~ dnorm(0, 1);
 
-#inv.var_sig   <- (1/sd_sig)^2 ;
 sig     ~ dnorm(0, 1/1) T(0,);
-#inv.var_tau   <- (1/sd_tau)^2 ;
 tau     ~ dnorm(0, 1/1) T(0,);
 }'
 #    
-cat(model, file="JAGS_ignore.txt")
+cat(model, file="JAGS_nonprefer.txt")
 ############
 ### END of  model 
 ############
 
+# Main function
 illustrative <- function(observed_data, MCMCiter=50000){
   
   ###
   datalist <- list(K=length(observed_data$Positive), confirmed_cases=unlist(observed_data$Positive), deaths=observed_data$death, population=observed_data$Pop, tests=observed_data$Sample_size)
   # ignore is when model assumes gamma = 0
-  jags.m_ignore <- jags.model(file = "JAGS_ignore.txt", data = datalist, n.chains = 5, n.adapt = 5000, inits= NULL)
+  jags.m_ignore <- jags.model(file = "JAGS_nonprefer.txt", data = datalist, n.chains = 5, n.adapt = 5000, inits= NULL)
   
   ######
   params <- c("phi", "theta", "beta",  "IFR", "infectionrate", "sig",   "tau")		
@@ -89,8 +77,7 @@ illustrative <- function(observed_data, MCMCiter=50000){
   median_ignore <- summary(samps_ignore)$quantiles[,c(3)]
   
   HDI<-hdi(samps_ignore)
-  QQ_ignore<-t(rbind(HDI[1,],median_ignore,HDI[2,]))
-  QQA<-QQ_ignore
+  QQ_A<-t(rbind(HDI[1,],median_ignore,HDI[2,]))
   goodQ<-QQA[c("theta", "beta",   "tau", "sig" ),]
   
   return(list(goodQ = goodQ, QQA=QQA, samps_ignore = samps_ignore))
@@ -102,11 +89,8 @@ illustrative <- function(observed_data, MCMCiter=50000){
 ### Run MCMC
 ## "Each model is fit using JAGS , with 5 independent chains, each with 500,000 draws 
 ## (20\% burnin, thinning of 50)." ###  
-
 MCMCiter_sim <- 50000
 results5B  <- illustrative(data,  MCMCiter = MCMCiter_sim)
-
-
 ## Find quatiles of IFR
 IFR  <- results5B$QQA[1:n,]
 IFRm <- results5B$QQA[1:n,2]
@@ -126,17 +110,6 @@ MCMCtrace(results5B$samps_ignore, params= c("theta","beta"), priors=cbind(cloglo
     TeX("Trace $\\beta$")),
     ,
   filename= "MCMC_theta_beta_nonprefer.pdf")
-
-### Plot infection rate
-IR <- cbind(results5B$QQA[(n+2):(2*n+1),],data$ses,data$Age_group)
-colnames(IR)<-c('IRl','IRm','IRu','ses','age')
-
-### Plot infection rate
-IR3_young %>% as_tibble() %>% ggplot(aes(x=ses,y=IRm)) +geom_point()+geom_errorbar(aes(ymin=IRl,ymax=IRu))
-
-IR %>% as_tibble() %>% filter() %>% ggplot(aes(x=ses,y=IRm,color=factor(age))) +geom_point(position=position_dodge(0.1))+
-  geom_errorbar(aes(ymin=IRl,ymax=IRu))+facet_wrap(~age)+geom_smooth(method=lm)+
-  stat_cor(aes(label =  paste(..rr.label.., ..p.label.., sep = "~`,`~")))
 
 ## Find parameters of MCMC
 parameter <-cbind(c('theta','beta','tau','sig'), results5B$goodQ)
