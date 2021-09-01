@@ -20,7 +20,7 @@ library(ggrepel)
 library(cowplot)
 library(ggspatial)
 library(lubridate)
-library(readr)
+
 
 ### functions:
 invlog <- function(x){exp(x)/(1+exp(x))}
@@ -29,14 +29,14 @@ cloglog <- function(x){log(-log(1-x))}
 icloglog <- function(x){1 - exp(-exp(x))}
 ilogit <- function(x) {exp(x)/(1+exp(x))}
 ### read in data from desktop
-data <- read_csv("clean_data.csv")
+data <- read_csv("data_combined.csv")
 
 View(data)
 n = length(data$Positive)
-ses.mean = mean(clean_data$ses)
+ses.mean = mean(data_combined$ses)
 
 
-### JAGS model for "M_{0}" ###
+### JAGS model ###
 ############
 model<- '
 model{	
@@ -110,9 +110,9 @@ inv.var_tau   <- (1/sd_tau)^2 ;
 sd_tau     ~ dnorm(0, 1/0.01) T(0,);
 }'
 #    
-cat(model, file="JAGS_ignore.txt")
+cat(model, file="JAGS.txt")
 ############
-### END of JAGS model for "M_{0}" ###
+### END of JAGS model  ###
 ############
 
 illustrative <- function(observed_data, MCMCiter=5000){
@@ -121,7 +121,7 @@ illustrative <- function(observed_data, MCMCiter=5000){
   datalist <- list(K=length(observed_data$Positive), confirmed_cases=unlist(observed_data$Positive), deaths=observed_data$death, population=observed_data$Pop, tests=observed_data$Sample_size
                    , ses = observed_data$ses, age = observed_data$Age_group )
   # ignore is when model assumes gamma = 0
-  jags.m_ignore <- jags.model(file = "JAGS_ignore.txt", data = datalist, n.chains = 5, n.adapt = 5000, inits= NULL)
+  jags.m_ignore <- jags.model(file = "JAGS.txt", data = datalist, n.chains = 5, n.adapt = 5000, inits= NULL)
   
   ######
   params <- c("phi", "alpha", "beta","omega",  "IFR", "infectionrate", "sd_sig",   "sd_tau","ita1"
