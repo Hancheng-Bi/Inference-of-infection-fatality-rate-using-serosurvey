@@ -1,3 +1,4 @@
+## This file plot Fig5B that includes preferential testing parameters
 library(readr)
 library(rjags)
 library(xtable)
@@ -20,7 +21,7 @@ library(ggrepel)
 library(cowplot)
 library(ggspatial)
 library(lubridate)
-library(readr)
+
 
 ### functions:
 invlog <- function(x){exp(x)/(1+exp(x))}
@@ -33,7 +34,7 @@ data <- read_csv("Desktop/clean_data.csv")
 View(data)
 n = length(data$Positive)
 
-### JAGS model for "M_{1}" ###
+### JAGS model for preferential testing ###
 ############
 model<- '
 model{	
@@ -56,14 +57,13 @@ gamma  ~ dexp(0.5);
 
 theta ~ dnorm(0, 1);
 beta ~ dnorm(0, 1);
-
 sig     ~ dnorm(0, 1/1) T(0,);
 tau     ~ dnorm(0, 1/1) T(0,);
 }'
 #    
 cat(model, file="JAGS_prefer.txt")
 ############
-### END of JAGS model for "M_{1}" ###
+### JAGS model for preferential testing ###
 ############
 
 illustrativep <- function(observed_data, MCMCiter=50000){
@@ -80,8 +80,7 @@ illustrativep <- function(observed_data, MCMCiter=50000){
   median_unif <- summary(samps_unif)$quantiles[,c(3)]
   
   HDI<-hdi(samps_unif)
-  QQ_unif<-t(rbind(HDI[1,],median_unif,HDI[2,]))
-  QQA<-QQ_unif
+  QQ_A<-t(rbind(HDI[1,],median_unif,HDI[2,]))
   goodQ<-QQA[c("theta", "beta",   "tau", "sig" , "gamma"),]
   
   return(list(goodQ = goodQ, QQA=QQA, samps_unif = samps_unif))
