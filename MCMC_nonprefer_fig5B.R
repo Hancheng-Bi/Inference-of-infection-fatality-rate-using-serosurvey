@@ -116,7 +116,9 @@ parameter <-cbind(c('theta','beta','tau','sig'), results5B$goodQ)
 colnames(parameter) <- c('para','lower','median','upper')
 write.csv(parameter,'parameter.csv')
   
-  
-  
+### Plot infection rate
+IR <- cbind(results5B$QQA[(n+2):(2*n+1),],data$ses,data$Age_group)
+colnames(IR)<-c('IRl','IRm','IRu','ses','age')
+write.csv(IR,'IR.csv')
   
   
