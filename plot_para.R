@@ -1,3 +1,5 @@
+### This file plots the credible interval of parameters during MCMC
+
 library(readr)
 parameter <- read_csv("parameter.csv")
 View(parameter)
