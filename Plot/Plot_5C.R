@@ -24,7 +24,7 @@ fig5C <- IFR_rate %>% mutate(age=as_factor(age)) %>%
                      guide=guide_legend(override.aes=list(size=1.5), reverse=TRUE)) + 
   scale_y_discrete('Age group', 
                    labels = c("1 and 2"="0-60")) +
-  scale_x_discrete(name = nm, limits=c(0:8),expand = c(0.1,0.1)) + 
+  scale_x_discrete(name = nm, limits=c(0:12),expand = c(0.1,0.1)) + 
   theme(legend.justification = c(1, 1), 
         legend.position = c(1, 1),
         legend.key.height=unit(0.3,"cm"),
