@@ -17,5 +17,5 @@ This code is written by Zhongren Chen and Hancheng Bi, these authors contributed
 #####
 
 # Obtained the plot
-All of the main figures in our report can be reproduced from the codes. To simulate MCMC, import the data from data file and run the codes under the file 'MCMC'. To produce the related figures, run first the files under 'MCMC'
+All of the main figures in our report can be reproduced from the codes. To simulate MCMC, import the data from data file and run the codes under the file 'MCMC'. with correct working directory. To produce the related figures, run first the files under 'MCMC'
 and then run the  R-code files under the file 'Plot'.
