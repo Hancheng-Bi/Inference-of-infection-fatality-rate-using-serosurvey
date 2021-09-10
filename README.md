@@ -1,6 +1,6 @@
 # Project Title: Inference of infection fatality rate using serosurvey
 This code is for inferring the infection fatality rate(IFR) of COVID-19 in Chile, based on sero-survey data in the greater Sandiago area. 
-It also includs a code for plotting the inferred IFR against the social economic status (SES) to check the correlation. 
+It also includes a code for plotting the inferred IFR against the social economic status (SES) to check the correlation. 
 This project is based on the artical:
 This code is written by Zhongren Chen and Hancheng Bi, these authors contributed equally.
 
